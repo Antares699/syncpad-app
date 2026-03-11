@@ -11,7 +11,7 @@
 
 #ifdef _WIN32
     /* ncurses for Windows via MSYS2 */
-    #include <ncurses/ncurses.h>
+    #include <curses.h>
     #include <windows.h>
     #include <direct.h>
     #include <io.h>
