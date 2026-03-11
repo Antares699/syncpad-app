@@ -10,8 +10,8 @@
  * ============================================ */
 
 #ifdef _WIN32
-    /* ncurses for Windows (MSYS2) */
-    #include <ncurses.h>
+    /* PDCurses for Windows */
+    #include <curses.h>
     #include <windows.h>
     #include <direct.h>
     #include <io.h>
