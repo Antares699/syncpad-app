@@ -1,0 +1,13 @@
+# Compiled binaries
+syncpad
+syncpad.exe
+*.o
+*.out
+
+# Logs
+*.log
+/tmp/syncpad_*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

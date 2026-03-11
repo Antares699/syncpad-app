@@ -1,0 +1,74 @@
+name: Build and Release Syncpad
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: syncpad
+            asset_name: syncpad-linux
+          - os: macos-latest
+            artifact_name: syncpad
+            asset_name: syncpad-macos
+          - os: windows-latest
+            artifact_name: syncpad.exe
+            asset_name: syncpad-windows.exe
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ===========================================
+      # LINUX BUILD (Ubuntu)
+      # ===========================================
+      - name: Install Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libncurses-dev libtinfo-dev libgit2-dev pkg-config
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: gcc main.c -lncurses -ltinfo $(pkg-config --libs --cflags libgit2) -o syncpad
+
+      # ===========================================
+      # MACOS BUILD
+      # ===========================================
+      - name: Install Dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ncurses libgit2 pkg-config
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: gcc main.c -lncurses $(pkg-config --libs --cflags libgit2) -o syncpad
+
+      # ===========================================
+      # WINDOWS BUILD (via MSYS2 + MinGW + PDCurses)
+      # ===========================================
+      - name: Setup MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pdcurses mingw-w64-x86_64-libgit2 mingw-w64-x86_64-pkgconf
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: gcc main.c -lpdcurses $(pkg-config --libs --cflags libgit2) -o syncpad.exe
+
+      # ===========================================
+      # UPLOAD ARTIFACT TO RELEASE
+      # ===========================================
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.artifact_name }}
+          name: ${{ matrix.asset_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
