@@ -58,12 +58,12 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           update: true
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pdcurses mingw-w64-x86_64-libgit2 mingw-w64-x86_64-pkgconf
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-ncurses mingw-w64-x86_64-libgit2 mingw-w64-x86_64-pkgconf
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
-        run: gcc main.c -lpdcurses $(pkg-config --libs --cflags libgit2) -o syncpad.exe
+        run: gcc main.c -lncurses $(pkg-config --libs --cflags libgit2) -o syncpad.exe
 
       # ===========================================
       # UPLOAD ARTIFACT TO RELEASE
