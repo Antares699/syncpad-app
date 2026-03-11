@@ -63,7 +63,7 @@ jobs:
       - name: Build (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
-        run: gcc main.c -lncursesw $(pkg-config --libs --cflags libgit2) -o syncpad.exe
+        run: gcc main.c -I/mingw64/include/ncursesw -lncursesw $(pkg-config --libs --cflags libgit2) -o syncpad.exe
 
       # ===========================================
       # UPLOAD ARTIFACT TO RELEASE
