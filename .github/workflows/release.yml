@@ -68,9 +68,13 @@ jobs:
       # ===========================================
       # UPLOAD ARTIFACT TO RELEASE
       # ===========================================
+      - name: Rename binary for upload
+        shell: bash
+        run: mv ${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ matrix.artifact_name }}
+          files: ${{ matrix.asset_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
