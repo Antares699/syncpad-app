@@ -127,9 +127,11 @@ gcc main.c -lncurses -ltinfo $(pkg-config --libs --cflags libgit2) -o syncpad
 gcc main.c -lncurses $(pkg-config --libs --cflags libgit2) -o syncpad
 ```
 
-**Windows (MSYS2):**
-```bash
-gcc main.c -lpdcurses $(pkg-config --libs --cflags libgit2) -o syncpad.exe
+**Windows (MSYS2 MinGW64):**
+1. Install MSYS2 from https://www.msys2.org/
+2. Open "MSYS2 MinGW 64-bit" terminal
+3. Run: `pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-ncurses mingw-w64-x86_64-libgit2 mingw-w64-x86_64-pkgconf make`
+4. Run: `make`
 ```
 
 ## Technical Details
