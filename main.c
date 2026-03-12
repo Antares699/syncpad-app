@@ -180,11 +180,23 @@ int verify_git_auth(const char* sync_dir) {
     char cmd[1024];
     printf("Verifying GitHub authentication...\n");
     
-    /* Create a temporary test commit and try to push it */
+    /* Create a temporary test file and try to push it */
+    char test_file[512];
+    snprintf(test_file, sizeof(test_file), "%s%c.auth_test", sync_dir, PATH_SEP);
+    
+    /* Create empty test file */
+    FILE *fp = fopen(test_file, "w");
+    if (fp) {
+        fclose(fp);
+    } else {
+        return 0;
+    }
+    
+    /* Try to add, commit, and push */
     snprintf(cmd, sizeof(cmd), 
-        "cd \"%s\" && touch .auth_test && git add .auth_test && "
-        "git commit -m 'Auth test' %s && git push origin main %s && "
-        "git rm .auth_test && git commit -m 'Cleanup auth test' %s && git push origin main %s",
+        "cd \"%s\" && git add .auth_test && "
+        "git commit -m \"Auth test\" %s && git push origin main %s && "
+        "git rm .auth_test && git commit -m \"Cleanup auth test\" %s && git push origin main %s",
         sync_dir, DEV_NULL, DEV_NULL, DEV_NULL, DEV_NULL);
     
     if (system(cmd) == 0) {
@@ -425,7 +437,7 @@ int main() {
     }
 
     /* Verify Git is available before entering UI */
-    if (system("git --version > /dev/null 2>&1") != 0) {
+    if (system("git --version " DEV_NULL) != 0) {
         printf("\nERROR: Git is not installed or not in PATH.\n");
         printf("Syncpad requires Git for synchronization.\n");
         printf("Please install Git and try again.\n");
