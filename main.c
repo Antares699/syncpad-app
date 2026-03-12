@@ -119,7 +119,7 @@ void draw_ui(int max_y, int max_x) {
     attroff(A_REVERSE); 
 
     attron(A_REVERSE);
-    mvprintw(max_y - 1, 0, "%-*s", max_x, " ^S Save & Sync  |  ^X Exit  |  Arrow Keys Navigate");
+    mvprintw(max_y - 1, 0, "%-*s", max_x, " ^S Save & Sync  |  ^X Exit");
     attroff(A_REVERSE);
 }
 
