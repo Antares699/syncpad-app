@@ -58,7 +58,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           update: true
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-ncurses mingw-w64-x86_64-libgit2 mingw-w64-x86_64-pkgconf mingw-w64-x86_64-zlib mingw-w64-x86_64-openssl
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-ncurses mingw-w64-x86_64-libgit2 mingw-w64-x86_64-pkgconf mingw-w64-x86_64-zlib mingw-w64-x86_64-openssl zip
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
