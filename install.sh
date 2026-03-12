@@ -75,9 +75,12 @@ curl -sL "$BINARY_URL" -o /tmp/syncpad
 echo "Making executable..."
 chmod +x /tmp/syncpad
 
-# Try to install to /usr/local/bin using sudo if needed
-if sudo -v 2>/dev/null && command -v sudo >/dev/null 2>&1; then
-    # If sudo works, move to /usr/local/bin with sudo
+# First try to install directly to /usr/local/bin
+if mv /tmp/syncpad /usr/local/bin/syncpad 2>/dev/null; then
+    sudo chown $USER /usr/local/bin/syncpad 2>/dev/null || true  # Not all systems support chown
+    echo "✓ Installed to /usr/local/bin/syncpad"
+elif command -v sudo >/dev/null 2>&1 && sudo -v 2>/dev/null; then
+    # If direct move failed but sudo is available, try with sudo
     sudo mv /tmp/syncpad /usr/local/bin/syncpad
     sudo chmod +x /usr/local/bin/syncpad
     echo "✓ Installed to /usr/local/bin/syncpad (with sudo)"
@@ -85,46 +88,57 @@ else
     # Fallback to ~/.local/bin
     mkdir -p "$HOME/.local/bin"
     mv /tmp/syncpad "$HOME/.local/bin/syncpad"
+    chmod +x "$HOME/.local/bin/syncpad"
     
     # Add to PATH for current session
     export PATH="$HOME/.local/bin:$PATH"
     
-    # Determine which shell config file to use based on the currently running shell
+    # Add to PATH in shell configuration file based on the currently running shell
     if [ -n "$ZSH_VERSION" ]; then
         # Zsh is running
         if ! grep -q "$HOME/.local/bin" "$HOME/.zshrc" 2>/dev/null; then
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
-            echo "Added to ~/.zshrc"
         fi
     elif [ -n "$BASH_VERSION" ]; then
         # Bash is running
         if ! grep -q "$HOME/.local/bin" "$HOME/.bashrc" 2>/dev/null; then
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-            echo "Added to ~/.bashrc"
         fi
     else
         # Unknown shell - try common shell configs based on $SHELL
         if [[ "$SHELL" == *"/zsh"* ]]; then
             if ! grep -q "$HOME/.local/bin" "$HOME/.zshrc" 2>/dev/null; then
                 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
-                echo "Added to ~/.zshrc"
             fi
         elif [[ "$SHELL" == *"/bash"* ]]; then
             if ! grep -q "$HOME/.local/bin" "$HOME/.bashrc" 2>/dev/null; then
                 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-                echo "Added to ~/.bashrc"
             fi
         else
             # Last fallback
             if ! grep -q "$HOME/.local/bin" "$HOME/.profile" 2>/dev/null; then
                 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.profile"
-                echo "Added to ~/.profile"
             fi
         fi
     fi
     
     echo "✓ Installed to ~/.local/bin/syncpad"
-    echo "  (Added to PATH - restart terminal or run 'source ~/.zshrc' or 'source ~/.bashrc')"
+    echo "  (Added to PATH - restart terminal or run 'source ~/.bashrc' or 'source ~/.zshrc')"
+fi
+
+# Verification step - check if syncpad command is available
+if command -v syncpad >/dev/null 2>&1; then
+    echo "✓ Verification: syncpad command is available"
+else
+    # Verify PATH is set for current session
+    if [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
+        echo "ℹ️ syncpad command should be available in new terminals"
+        echo "  Run 'source ~/.bashrc' or restart your terminal to use syncpad now"
+    else
+        echo "! Warning: syncpad not found in PATH"
+        echo "  You may need to restart your terminal or run:"
+        echo "  source ~/.bashrc"
+    fi
 fi
 
 echo ""
