@@ -45,8 +45,8 @@ jobs:
           gcc main.c -o syncpad \
             $(pkg-config --cflags libgit2) \
             -lncursesw \
-            -Wl,-Bstatic -lgit2 -lssh2 -lssl -lcrypto -lpcre2-8 -lz \
-            -Wl,-Bdynamic -lhttp_parser -lgssapi_krb5 -lkrb5 -lk5crypto -lcom_err \
+            -Wl,-Bstatic -lgit2 -lssh2 -lssl -lcrypto -lpcre2-8 -lz -lhttp_parser \
+            -Wl,-Bdynamic -lgssapi_krb5 -lkrb5 -lk5crypto -lcom_err \
             -lpthread -ldl -lrt
 
       # ===========================================
