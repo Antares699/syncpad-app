@@ -42,20 +42,27 @@ fi
 
 echo "✓ Git detected"
 
-# Check if SSH keys exist (warning only)
-if [ ! -f "$HOME/.ssh/id_rsa" ] && [ ! -f "$HOME/.ssh/id_ed25519" ]; then
+# Check authentication (SSH keys or GitHub CLI)
+AUTH_OK=false
+if [ -f "$HOME/.ssh/id_rsa" ] || [ -f "$HOME/.ssh/id_ed25519" ]; then
+    AUTH_OK=true
+    echo "✓ SSH keys detected"
+elif command -v gh &> /dev/null && gh auth status &> /dev/null; then
+    AUTH_OK=true
+    echo "✓ GitHub CLI authenticated"
+fi
+
+if [ "$AUTH_OK" = false ]; then
     echo ""
-    echo "WARNING: No SSH keys detected in ~/.ssh/"
+    echo "WARNING: No SSH keys or GitHub CLI authentication detected."
+    echo "Syncpad requires GitHub authentication to sync notes."
     echo ""
-    echo "Syncpad requires GitHub authentication. You have two options:"
+    echo "You have two options:"
     echo "  1. Set up SSH keys (see https://github.com/Antares699/syncpad-app/blob/main/SETUP.md)"
     echo "  2. Install and authenticate with GitHub CLI: gh auth login"
     echo ""
-    read -p "Continue installation anyway? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+    echo "Continuing installation... (you can set up authentication later)"
+    sleep 2
 fi
 
 # Construct the download URL
