@@ -36,7 +36,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libncurses-dev libgit2-dev pkg-config \
-            libssl-dev libssh2-1-dev zlib1g-dev libpcre2-dev
+            libssl-dev libssh2-1-dev zlib1g-dev libpcre2-dev \
+            libhttp-parser-dev libkrb5-dev
 
       - name: Build (Linux) - Static Linking
         if: runner.os == 'Linux'
@@ -45,7 +46,8 @@ jobs:
             $(pkg-config --cflags libgit2) \
             -lncursesw \
             -Wl,-Bstatic -lgit2 -lssh2 -lssl -lcrypto -lpcre2-8 -lz \
-            -Wl,-Bdynamic -lpthread -ldl -lrt
+            -Wl,-Bdynamic -lhttp_parser -lgssapi_krb5 -lkrb5 -lk5crypto -lcom_err \
+            -lpthread -ldl -lrt
 
       # ===========================================
       # MACOS BUILD
