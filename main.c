@@ -29,6 +29,10 @@
     
     /* Windows temp directory */
     #define TEMP_FILE "%TEMP%\\syncpad_debug.log"
+    
+    /* ASCII control key definitions (same as Unix) */
+    #define CTRL_S 19
+    #define CTRL_X 24
 
 #else
     /* ncurses for Unix (Linux/macOS) */
