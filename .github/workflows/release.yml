@@ -37,9 +37,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libncurses-dev libgit2-dev pkg-config
 
-      - name: Build (Linux)
+      - name: Build (Linux) - Static Linking
         if: runner.os == 'Linux'
-        run: gcc main.c -lncursesw $(pkg-config --libs --cflags libgit2) -o syncpad
+        run: |
+          gcc main.c -o syncpad \
+            -lncursesw \
+            $(pkg-config --libs --cflags libgit2 --static) \
+            -lssh2 -lssl -lcrypto -lz -lpcre2-8 \
+            -static-libgcc
 
       # ===========================================
       # MACOS BUILD
