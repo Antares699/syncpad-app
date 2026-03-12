@@ -35,16 +35,17 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libncurses-dev libgit2-dev pkg-config
+          sudo apt-get install -y libncurses-dev libgit2-dev pkg-config \
+            libssl-dev libssh2-1-dev zlib1g-dev libpcre2-dev
 
       - name: Build (Linux) - Static Linking
         if: runner.os == 'Linux'
         run: |
           gcc main.c -o syncpad \
+            $(pkg-config --cflags libgit2) \
             -lncursesw \
-            $(pkg-config --libs --cflags libgit2 --static) \
-            -lssh2 -lssl -lcrypto -lz -lpcre2-8 \
-            -static-libgcc
+            -Wl,-Bstatic -lgit2 -lssh2 -lssl -lcrypto -lpcre2-8 -lz \
+            -Wl,-Bdynamic -lpthread -ldl -lrt
 
       # ===========================================
       # MACOS BUILD
