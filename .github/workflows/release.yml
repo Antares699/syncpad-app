@@ -21,8 +21,8 @@ jobs:
             artifact_name: syncpad
             asset_name: syncpad-macos
           - os: windows-latest
-            artifact_name: syncpad.exe
-            asset_name: syncpad-windows.exe
+            artifact_name: syncpad-windows.zip
+            asset_name: syncpad-windows.zip
 
     steps:
       - name: Checkout Code
@@ -66,11 +66,44 @@ jobs:
         run: gcc main.c -lncursesw $(pkg-config --libs --cflags libgit2) -o syncpad.exe
 
       # ===========================================
+      # GATHER WINDOWS DLLS AND CREATE ZIP
+      # ===========================================
+      - name: Gather Windows DLLs
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          mkdir -p syncpad-windows
+          cp syncpad.exe syncpad-windows/
+          ldd syncpad.exe | grep mingw64 | awk '{print $3}' | while read dll; do
+            if [ -f "$dll" ]; then
+              cp "$dll" syncpad-windows/
+              echo "Copied: $(basename $dll)"
+            fi
+          done
+          echo "=== Windows Distribution Contents ==="
+          ls -lh syncpad-windows/
+
+      - name: Create Windows ZIP
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          cd syncpad-windows
+          zip -r ../syncpad-windows.zip .
+          cd ..
+          echo "=== Created ZIP Archive ==="
+          ls -lh syncpad-windows.zip
+
+      # ===========================================
       # UPLOAD ARTIFACT TO RELEASE
       # ===========================================
-      - name: Rename binary for upload
+      - name: Prepare artifact for upload
         shell: bash
-        run: mv ${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            echo "Windows zip ready: ${{ matrix.asset_name }}"
+          else
+            mv ${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+          fi
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1

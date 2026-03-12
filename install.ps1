@@ -47,11 +47,11 @@ if (-not $hasSSHKeys) {
 }
 
 # Build the download URL
-$BinaryUrl = "https://github.com/$Repo/releases/latest/download/syncpad-windows.exe"
+$ZipUrl = "https://github.com/$Repo/releases/latest/download/syncpad-windows.zip"
 
-# Create installation directory
-$InstallDir = "$env:USERPROFILE\.syncpad_bin"
-$ExePath = "$InstallDir\syncpad.exe"
+# Create installation directory (Windows-like location)
+$InstallDir = "$env:LOCALAPPDATA\Syncpad"
+$ZipPath = "$env:TEMP\syncpad-windows.zip"
 
 if (!(Test-Path -Path $InstallDir)) {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
@@ -61,16 +61,29 @@ if (!(Test-Path -Path $InstallDir)) {
 Write-Host ""
 Write-Host "Downloading Syncpad for Windows..." -ForegroundColor Cyan
 
-# Download the binary
+# Download the zip file
 try {
-    Invoke-WebRequest -Uri $BinaryUrl -OutFile $ExePath -UseBasicParsing
+    Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipPath -UseBasicParsing
 } catch {
     Write-Host "ERROR: Failed to download Syncpad." -ForegroundColor Red
-    Write-Host "Make sure a release exists at: $BinaryUrl" -ForegroundColor Yellow
+    Write-Host "Make sure a release exists at: $ZipUrl" -ForegroundColor Yellow
     exit 1
 }
 
-Write-Host "✓ Downloaded to $ExePath" -ForegroundColor Green
+Write-Host "✓ Downloaded to $ZipPath" -ForegroundColor Green
+
+# Extract the zip
+Write-Host "Extracting to $InstallDir..." -ForegroundColor Cyan
+try {
+    Expand-Archive -Path $ZipPath -DestinationPath $InstallDir -Force
+    Remove-Item $ZipPath -Force
+} catch {
+    Write-Host "ERROR: Failed to extract Syncpad." -ForegroundColor Red
+    Write-Host $_.Exception.Message
+    exit 1
+}
+
+Write-Host "✓ Installed to $InstallDir" -ForegroundColor Green
 
 # ===== PATH SETUP =====
 Write-Host "Adding Syncpad to User PATH..." -ForegroundColor Cyan
