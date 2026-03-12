@@ -48,9 +48,9 @@ jobs:
               -lz \
               -lpcre2-8 \
               -lllhttp \
-              -o syncpad
+              -o syncpad && \
+            chmod +x syncpad
           "
-          chmod +x syncpad
 
       # ===========================================
       # MACOS BUILD
