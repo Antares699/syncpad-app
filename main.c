@@ -23,10 +23,12 @@
     /* Windows uses nul for /dev/null */
     #define DEV_NULL "> nul 2>&1"
     #define PATH_SEP '\\'
-
-    /* ASCII control key definitions */
-    #define CTRL_S 19
-    #define CTRL_X 24
+    
+    /* Windows needs cd /d to change drives */
+    #define CD_CMD "cd /d"
+    
+    /* Windows temp directory */
+    #define TEMP_FILE "%TEMP%\\syncpad_debug.log"
 
 #else
     /* ncurses for Unix (Linux/macOS) */
@@ -40,6 +42,12 @@
     /* Unix uses /dev/null */
     #define DEV_NULL "> /dev/null 2>&1"
     #define PATH_SEP '/'
+    
+    /* Unix uses standard cd */
+    #define CD_CMD "cd"
+    
+    /* Unix temp directory */
+    #define TEMP_FILE "/tmp/syncpad_debug.log"
 
     /* ASCII control key definitions */
     #define CTRL_S 19
@@ -150,27 +158,27 @@ void verify_git_config(const char* sync_dir) {
     char cmd[1024];
     
     /* Check user.name */
-    snprintf(cmd, sizeof(cmd), "cd \"%s\" && git config user.name", sync_dir);
+    snprintf(cmd, sizeof(cmd), CD_CMD " \"%s\" && git config user.name", sync_dir);
     if (system(cmd) != 0) {
         printf("\nGit 'user.name' not set. Syncpad needs this for commits.\n");
         printf("Enter your name: ");
         char name[256];
         if (fgets(name, sizeof(name), stdin)) {
             name[strcspn(name, "\n")] = 0;
-            snprintf(cmd, sizeof(cmd), "cd \"%s\" && git config user.name \"%s\"", sync_dir, name);
+            snprintf(cmd, sizeof(cmd), CD_CMD " \"%s\" && git config user.name \"%s\"", sync_dir, name);
             system(cmd);
         }
     }
 
     /* Check user.email */
-    snprintf(cmd, sizeof(cmd), "cd \"%s\" && git config user.email", sync_dir);
+    snprintf(cmd, sizeof(cmd), CD_CMD " \"%s\" && git config user.email", sync_dir);
     if (system(cmd) != 0) {
         printf("\nGit 'user.email' not set. Syncpad needs this for commits.\n");
         printf("Enter your email: ");
         char email[256];
         if (fgets(email, sizeof(email), stdin)) {
             email[strcspn(email, "\n")] = 0;
-            snprintf(cmd, sizeof(cmd), "cd \"%s\" && git config user.email \"%s\"", sync_dir, email);
+            snprintf(cmd, sizeof(cmd), CD_CMD " \"%s\" && git config user.email \"%s\"", sync_dir, email);
             system(cmd);
         }
     }
@@ -194,7 +202,7 @@ int verify_git_auth(const char* sync_dir) {
     
     /* Try to add, commit, and push */
     snprintf(cmd, sizeof(cmd), 
-        "cd \"%s\" && git add .auth_test && "
+        CD_CMD " \"%s\" && git add .auth_test && "
         "git commit -m \"Auth test\" %s && git push origin main %s && "
         "git rm .auth_test && git commit -m \"Cleanup auth test\" %s && git push origin main %s",
         sync_dir, DEV_NULL, DEV_NULL, DEV_NULL, DEV_NULL);
@@ -315,21 +323,12 @@ int sync_to_github_in_background(const char* sync_dir) {
 
     /* 6. Push to origin using system Git */
     char push_cmd[2048];
-    snprintf(push_cmd, sizeof(push_cmd), "cd \"%s\" && git push origin main -q > /dev/null 2>&1", sync_dir);
+    snprintf(push_cmd, sizeof(push_cmd), CD_CMD " \"%s\" && git push origin main -q %s", sync_dir, DEV_NULL);
     
     if (system(push_cmd) != 0) {
         result = -1; 
-        git_debug = fopen("/tmp/syncpad_libgit2_debug.log", "a");
-        if (git_debug) {
-            fprintf(git_debug, "System git push failed\n");
-            fclose(git_debug);
-        }
     } else {
-        git_debug = fopen("/tmp/syncpad_libgit2_debug.log", "a");
-        if (git_debug) {
-            fprintf(git_debug, "System git push succeeded!\n");
-            fclose(git_debug);
-        }
+        result = 0;
     }
 
     return result;
@@ -419,7 +418,7 @@ int main() {
         /* Sync any changes from other computers before UI loads */
         printf("Syncing notes from the cloud...\n");
         
-        snprintf(cmd_buffer, sizeof(cmd_buffer), "cd \"%s\" && git pull origin main -q %s", sync_dir, DEV_NULL);
+        snprintf(cmd_buffer, sizeof(cmd_buffer), CD_CMD " \"%s\" && git pull origin main -q %s", sync_dir, DEV_NULL);
         system(cmd_buffer);
     }
 
