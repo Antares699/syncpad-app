@@ -75,21 +75,34 @@ curl -sL "$BINARY_URL" -o /tmp/syncpad
 echo "Making executable..."
 chmod +x /tmp/syncpad
 
-# Detect if we need sudo
-if [ -w /usr/local/bin ]; then
+# Try /usr/local/bin first (works for all shells)
+if [ -w /usr/local/bin ] || [ -w /usr/local/bin/ ]; then
     mv /tmp/syncpad /usr/local/bin/syncpad
-    echo "Installed to /usr/local/bin/syncpad"
+    echo "✓ Installed to /usr/local/bin/syncpad"
 else
-    echo "Installing to ~/.local/bin (adding to PATH if needed)..."
+    # Fallback to ~/.local/bin
     mkdir -p "$HOME/.local/bin"
     mv /tmp/syncpad "$HOME/.local/bin/syncpad"
     
-    # Add to PATH for this session if not already there
-    if [[ ":$PATH:" != *"$HOME/.local/bin"* ]]; then
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-        echo "Added ~/.local/bin to PATH in ~/.bashrc. Run 'source ~/.bashrc' or restart terminal."
+    # Add to PATH for current session and shell config
+    export PATH="$HOME/.local/bin:$PATH"
+    
+    # Add to shell config (works for bash, zsh, fish, etc.)
+    if [ -n "$ZSH_VERSION" ]; then
+        if ! grep -q "\.local/bin" "$HOME/.zshrc" 2>/dev/null; then
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
+        fi
+    elif [ -n "$BASH_VERSION" ]; then
+        if ! grep -q "\.local/bin" "$HOME/.bashrc" 2>/dev/null; then
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+        fi
+    else
+        # Generic fallback
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.profile"
     fi
-    echo "Installed to ~/.local/bin/syncpad"
+    
+    echo "✓ Installed to ~/.local/bin/syncpad"
+    echo "  (Added to PATH - restart terminal if needed)"
 fi
 
 echo ""
