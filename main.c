@@ -63,7 +63,7 @@
  * ============================================ */
 
 #define MAX_LINES 1000       
-#define MAX_COLS 256         
+#define MAX_COLS 4096        /* Increased to support long lines */
 
 /* ============================================
  * GLOBAL STATE
@@ -75,6 +75,9 @@ char text_buffer[MAX_LINES][MAX_COLS] = {0};
 /* Cursor position tracking */
 int cursor_x = 0;
 int cursor_y = 0;
+
+/* Scroll offset for vertical scrolling */
+int scroll_offset = 0;
 
 /* ============================================
  * HELPER FUNCTIONS
@@ -116,8 +119,58 @@ void draw_ui(int max_y, int max_x) {
     attroff(A_REVERSE); 
 
     attron(A_REVERSE);
-    mvprintw(max_y - 1, 0, "%-*s", max_x, " ^S Save & Sync  |  ^X Exit");
+    mvprintw(max_y - 1, 0, "%-*s", max_x, " ^S Save & Sync  |  ^X Exit  |  Arrow Keys Navigate");
     attroff(A_REVERSE);
+}
+
+/* Calculate screen position for cursor with line wrapping */
+void calculate_cursor_screen_position(int *screen_y, int *screen_x, int max_x) {
+    int screen_row = 1;  // Start after header
+    
+    // Count wrapped lines before cursor_y
+    for (int buf_line = scroll_offset; buf_line < cursor_y; buf_line++) {
+        int line_len = strlen(text_buffer[buf_line]);
+        if (line_len == 0) {
+            screen_row += 1;
+        } else {
+            int wrapped_rows = (line_len + max_x - 1) / max_x;  // Ceiling division
+            screen_row += wrapped_rows;
+        }
+    }
+    
+    // Calculate position within current line
+    int rows_before_cursor = cursor_x / max_x;
+    int col_in_row = cursor_x % max_x;
+    
+    *screen_y = screen_row + rows_before_cursor;
+    *screen_x = col_in_row;
+}
+
+/* Render text with line wrapping */
+int render_wrapped_lines(int max_y, int max_x) {
+    int screen_row = 1;  // Start after header
+    
+    for (int buf_line = scroll_offset; buf_line < MAX_LINES && screen_row < max_y - 1; buf_line++) {
+        char *line = text_buffer[buf_line];
+        int line_len = strlen(line);
+        
+        if (line_len == 0) {
+            // Empty line - still takes one screen row
+            screen_row++;
+            continue;
+        }
+        
+        // Wrap this logical line across multiple screen rows
+        int col = 0;
+        while (col < line_len && screen_row < max_y - 1) {
+            int chars_to_print = (line_len - col > max_x) ? max_x : (line_len - col);
+            mvprintw(screen_row, 0, "%.*s", chars_to_print, line + col);
+            col += chars_to_print;
+            screen_row++;
+        }
+    }
+    
+    return screen_row;
 }
 
 int save_file(const char* filepath) {
@@ -471,13 +524,25 @@ int main() {
         /* Draw the header and footer */
         draw_ui(max_y, max_x);
 
-        /* Render all lines in the text buffer */
-        for (int i = 0; i <= cursor_y && i < max_y - 2; i++) {
-            mvprintw(i + 1, 0, "%s", text_buffer[i]);
-        }
+        /* Render all lines with wrapping */
+        render_wrapped_lines(max_y, max_x);
 
-        /* Place the cursor at current position */
-        move(cursor_y + 1, cursor_x);
+        /* Calculate and place cursor at correct screen position */
+        int screen_y, screen_x;
+        calculate_cursor_screen_position(&screen_y, &screen_x, max_x);
+        
+        /* Adjust scroll if cursor is off screen */
+        if (screen_y >= max_y - 1) {
+            scroll_offset++;
+            continue;
+        }
+        if (screen_y < 1) {
+            scroll_offset--;
+            if (scroll_offset < 0) scroll_offset = 0;
+            continue;
+        }
+        
+        move(screen_y, screen_x);
         refresh();
 
         int ch = getch();
@@ -546,6 +611,41 @@ int main() {
             if (cursor_y < MAX_LINES - 1) {
                 cursor_y++;
                 cursor_x = 0;
+            }
+        }
+        else if (ch == KEY_LEFT) {
+            /* Arrow Left */
+            if (cursor_x > 0) {
+                cursor_x--;
+            } else if (cursor_y > 0) {
+                cursor_y--;
+                cursor_x = strlen(text_buffer[cursor_y]);
+            }
+        }
+        else if (ch == KEY_RIGHT) {
+            /* Arrow Right */
+            int line_len = strlen(text_buffer[cursor_y]);
+            if (cursor_x < line_len) {
+                cursor_x++;
+            } else if (cursor_y < MAX_LINES - 1 && strlen(text_buffer[cursor_y + 1]) >= 0) {
+                cursor_y++;
+                cursor_x = 0;
+            }
+        }
+        else if (ch == KEY_UP) {
+            /* Arrow Up */
+            if (cursor_y > 0) {
+                cursor_y--;
+                int line_len = strlen(text_buffer[cursor_y]);
+                if (cursor_x > line_len) cursor_x = line_len;
+            }
+        }
+        else if (ch == KEY_DOWN) {
+            /* Arrow Down */
+            if (cursor_y < MAX_LINES - 1) {
+                cursor_y++;
+                int line_len = strlen(text_buffer[cursor_y]);
+                if (cursor_x > line_len) cursor_x = line_len;
             }
         }
         else if (ch >= 32 && ch <= 126) { 
