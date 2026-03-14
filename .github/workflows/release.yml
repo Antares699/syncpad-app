@@ -50,15 +50,75 @@ jobs:
             -lpthread -ldl -lrt
 
       # ===========================================
-      # MACOS BUILD
+      # MACOS BUILD (Universal Static Binary)
       # ===========================================
       - name: Install Dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install ncurses libgit2 pkg-config
+        run: brew install ncurses libssh2 openssl@3 cmake
 
-      - name: Build (macOS)
+      - name: Build libgit2 Static (macOS)
         if: runner.os == 'macOS'
-        run: gcc main.c -lncurses $(pkg-config --libs --cflags libgit2) -o syncpad
+        run: |
+          echo "=== Building libgit2 as universal static library ==="
+          git clone --depth 1 --branch v1.8.1 https://github.com/libgit2/libgit2.git
+          cd libgit2
+          mkdir build && cd build
+          cmake -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+                -DBUILD_SHARED_LIBS=OFF \
+                -DCMAKE_INSTALL_PREFIX=$PWD/install \
+                -DBUILD_TESTS=OFF \
+                -DUSE_SSH=ON \
+                -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) \
+                ..
+          make -j$(sysctl -n hw.ncpu)
+          make install
+          echo "=== libgit2 static library built ==="
+          ls -lh install/lib/
+
+      - name: Build (macOS) - Universal Static Binary
+        if: runner.os == 'macOS'
+        run: |
+          echo "=== Building syncpad as universal binary ==="
+          
+          # Get Homebrew prefix (different on Intel vs Apple Silicon)
+          BREW_PREFIX=$(brew --prefix)
+          
+          # Build with explicit static library paths
+          clang -arch x86_64 -arch arm64 \
+            main.c \
+            -o syncpad \
+            -I libgit2/build/install/include \
+            libgit2/build/install/lib/libgit2.a \
+            ${BREW_PREFIX}/lib/libssh2.a \
+            ${BREW_PREFIX}/opt/openssl@3/lib/libssl.a \
+            ${BREW_PREFIX}/opt/openssl@3/lib/libcrypto.a \
+            -lncurses \
+            -lz -liconv \
+            -framework CoreFoundation \
+            -framework Security
+          
+          echo "=== Build complete ==="
+
+      - name: Verify macOS Binary
+        if: runner.os == 'macOS'
+        run: |
+          echo "=== Binary Architecture ==="
+          lipo -info syncpad
+          file syncpad
+          echo ""
+          echo "=== Dynamic Library Dependencies ==="
+          otool -L syncpad
+          echo ""
+          echo "=== Checking for Homebrew paths ==="
+          if otool -L syncpad | grep -i "$(brew --prefix)"; then
+            echo "WARNING: Binary references Homebrew paths (may not be portable)"
+            otool -L syncpad | grep -i "$(brew --prefix)"
+          else
+            echo "✓ No Homebrew dependencies found - binary is portable"
+          fi
+          echo ""
+          echo "=== Testing binary execution ==="
+          ./syncpad --version 2>&1 || echo "Note: --version flag may not exist, exit code: $?"
 
       # ===========================================
       # WINDOWS BUILD (via MSYS2 + MinGW + ncurses)
