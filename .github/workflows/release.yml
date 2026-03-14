@@ -59,12 +59,11 @@ jobs:
       - name: Build libgit2 Static (macOS)
         if: runner.os == 'macOS'
         run: |
-          echo "=== Building libgit2 as universal static library ==="
+          echo "=== Building libgit2 as static library ==="
           git clone --depth 1 --branch v1.8.1 https://github.com/libgit2/libgit2.git
           cd libgit2
           mkdir build && cd build
-          cmake -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
-                -DBUILD_SHARED_LIBS=OFF \
+          cmake -DBUILD_SHARED_LIBS=OFF \
                 -DCMAKE_INSTALL_PREFIX=$PWD/install \
                 -DBUILD_TESTS=OFF \
                 -DUSE_SSH=ON \
@@ -75,17 +74,16 @@ jobs:
           echo "=== libgit2 static library built ==="
           ls -lh install/lib/
 
-      - name: Build (macOS) - Universal Static Binary
+      - name: Build (macOS) - Static Binary
         if: runner.os == 'macOS'
         run: |
-          echo "=== Building syncpad as universal binary ==="
+          echo "=== Building syncpad with static linking ==="
           
           # Get Homebrew prefix (different on Intel vs Apple Silicon)
           BREW_PREFIX=$(brew --prefix)
           
           # Build with explicit static library paths
-          clang -arch x86_64 -arch arm64 \
-            main.c \
+          clang main.c \
             -o syncpad \
             -I libgit2/build/install/include \
             libgit2/build/install/lib/libgit2.a \
@@ -103,7 +101,6 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           echo "=== Binary Architecture ==="
-          lipo -info syncpad
           file syncpad
           echo ""
           echo "=== Dynamic Library Dependencies ==="
